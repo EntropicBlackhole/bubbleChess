@@ -44,6 +44,30 @@ class Board {
 		let whiteSide = boardMatrix;
 		blackSide = rotateMatrix(blackSide);
 
+        let wBuffer = [];   // Array of all ranks in the white side to buffer
+        let bBuffer = [];   // ...
+
+        for (let r in bufferRanks) {
+            if (r > 4) {
+                bBuffer.push(r + 5);
+            }
+            else {
+                wBuffer.push(4 - r);
+            }
+        }
+
+        let wSweep = [], bSweep = [];
+
+        for (let i = 0; i < 4; i++) {
+            if (!wBuffer.includes(i)) {
+                bubbleSort(whiteSide[i], valueMap);
+            }
+
+            if (!bBuffer.includes(i)) {
+                bubbleSort(blackSide[i], valueMap);
+            }
+        }
+        /*
 		if (!bufferRanks.includes(0 + 1))
 			whiteSide[0] = bubbleSort(whiteSide[0], valueMap);
 		if (!bufferRanks.includes(1 + 1))
@@ -60,14 +84,19 @@ class Board {
 			blackSide[2] = bubbleSort(blackSide[2], valueMap);
 		if (!bufferRanks.includes(3 + 5))
 			blackSide[3] = bubbleSort(blackSide[3], valueMap);
+        */
 
-		return whiteSide
+        // we flip back the black side of the board and compose the full board.
+        blackSide = rotateMatrix(blackSide);
+        const resultMatrix = [...blackSide, ...whiteSide];
+
+		return resultMatrix;
 	}
 }
 
 // "krnbqrbn/pppppppp/8/8/4P3/8/PPPP1PPP/NBRQBNRK w - - 0 1"
 
-const board = new Board();
+let board = new Board();
 
 console.log(board.performSweep([2, 4]));
 
