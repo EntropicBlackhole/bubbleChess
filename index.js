@@ -92,13 +92,34 @@ class Board {
 
 		return this.__setBoardStateFromMatrix(resultMatrix);
 	}
+
+    makeMove(from, to) {
+        // from, to : Alg -> [r, c]
+
+        let boardMatrix = this.getBoardMatrix();
+        const piece = boardMatrix[from[0]][from[1]];
+
+        console.log(piece);
+        console.log(from);
+        console.log(to);
+
+        // Validate if move is legal
+
+        boardMatrix[to[0]][to[1]] = piece;
+        boardMatrix[from[0]][from[1]] = '';
+
+        this.state = this.__setBoardStateFromMatrix(boardMatrix);
+        this.state = this.performSweep([to_algebraic(from)[1], to_algebraic(to)[1]]);
+
+        return this.state;
+    }
 }
 
 // "krnbqrbn/pppppppp/8/8/4P3/8/PPPP1PPP/NBRQBNRK w - - 0 1"
 
 let board = new Board();
 
-console.log(board.performSweep([2, 4]));
+// console.log(board.performSweep([2, 4]));
 
 function bubbleSort(list, valueMap) {
 	// this supports a valueMap, so we can do shit like swapping two pieces based on value, keeping those pieces as chars
@@ -118,10 +139,32 @@ function bubbleSort(list, valueMap) {
 	return list;
 }
 
+function to_matricial(arg) {
+
+    const row = 8 - Number(arg[1]);
+    const col = arg.charCodeAt(0) - 97; // a = 97
+
+    return [row, col];
+}
+
+function to_algebraic(arg) {
+
+    const file = String.fromCharCode(arg[1] + 97);
+    const rank = 8 - arg[0].toString();
+
+    console.log(file + rank);
+    return (file + rank);
+}
+
+console.log('before:', board.getBoardMatrix());
+
+board.makeMove(to_matricial('e2'), to_matricial('e4'));
+console.log('after:', board.getBoardMatrix());
+
 // console.log(bubbleSort([3, 6, 3, 2, 3, 13, 9, 1, 4]))
 
 function rotateMatrix(matrix) {
-	//asuming its as deep as 2 levels
+	//assuming it's as deep as 2 levels
 	const returnMatrix = [];
 	for (let i = matrix.length - 1; i >= 0; i--) {
 		returnMatrix.push(matrix[i].toReversed());
