@@ -14,7 +14,36 @@ class Board {
 		return positions;
 	}
 
-	__setBoardStateFromMatrix() {}
+	__setBoardStateFromMatrix(matrix) {
+		const fenRows = matrix.map((row) => {
+			let emptyCount = 0;
+			let rowString = '';
+
+			for (let char of row) {
+				if (char === '') emptyCount++;
+				else {
+					if (emptyCount > 0) {
+						rowString += emptyCount;
+						emptyCount = 0;
+					}
+					rowString += char;
+				}
+			}
+			if (emptyCount > 0) rowString += emptyCount;
+
+			return rowString;
+		});
+
+		const newBoardFen = fenRows.join('/');
+		const stateParts = this.state.split(' ');
+
+		if (stateParts.length > 1) {
+			const metadata = stateParts.slice(1).join(' ');
+			this.state = `${newBoardFen} ${metadata}`;
+		} else this.state = newBoardFen;
+
+		return this.state;
+	}
 
 	performSweep(bufferRanks = []) {
 		// an array of ranks that are buffered, usually one when the movement is horizontal or two otherwise
@@ -44,53 +73,24 @@ class Board {
 		let whiteSide = boardMatrix;
 		blackSide = rotateMatrix(blackSide);
 
-        let wBuffer = [];   // Array of all ranks in the white side to buffer
-        let bBuffer = [];   // ...
+		for (let i = 0; i < 4; i++) {
+			let currentWhiteRank = 4 - i;
+			let currentBlackRank = 5 + i;
 
-        for (let r in bufferRanks) {
-            if (r > 4) {
-                bBuffer.push(r + 5);
-            }
-            else {
-                wBuffer.push(4 - r);
-            }
-        }
+			// if that rank is NOT in the buffer list, sweep it
+			if (!bufferRanks.includes(currentWhiteRank))
+				bubbleSort(whiteSide[i], valueMap);
 
-        let wSweep = [], bSweep = [];
+			// if that rank is NOT in the buffer list, sweep it
+			if (!bufferRanks.includes(currentBlackRank))
+				bubbleSort(blackSide[i], valueMap);
+		}
 
-        for (let i = 0; i < 4; i++) {
-            if (!wBuffer.includes(i)) {
-                bubbleSort(whiteSide[i], valueMap);
-            }
+		// we flip back the black side of the board and compose the full board.
+		blackSide = rotateMatrix(blackSide);
+		const resultMatrix = [...blackSide, ...whiteSide];
 
-            if (!bBuffer.includes(i)) {
-                bubbleSort(blackSide[i], valueMap);
-            }
-        }
-        /*
-		if (!bufferRanks.includes(0 + 1))
-			whiteSide[0] = bubbleSort(whiteSide[0], valueMap);
-		if (!bufferRanks.includes(1 + 1))
-			whiteSide[1] = bubbleSort(whiteSide[1], valueMap);
-		if (!bufferRanks.includes(2 + 1))
-			whiteSide[2] = bubbleSort(whiteSide[2], valueMap);
-		if (!bufferRanks.includes(3 + 1))
-			whiteSide[3] = bubbleSort(whiteSide[3], valueMap);
-		if (!bufferRanks.includes(0 + 5))
-			blackSide[0] = bubbleSort(blackSide[0], valueMap);
-		if (!bufferRanks.includes(1 + 5))
-			blackSide[1] = bubbleSort(blackSide[1], valueMap);
-		if (!bufferRanks.includes(2 + 5))
-			blackSide[2] = bubbleSort(blackSide[2], valueMap);
-		if (!bufferRanks.includes(3 + 5))
-			blackSide[3] = bubbleSort(blackSide[3], valueMap);
-        */
-
-        // we flip back the black side of the board and compose the full board.
-        blackSide = rotateMatrix(blackSide);
-        const resultMatrix = [...blackSide, ...whiteSide];
-
-		return resultMatrix;
+		return this.__setBoardStateFromMatrix(resultMatrix);
 	}
 }
 
@@ -105,7 +105,7 @@ function bubbleSort(list, valueMap) {
 	// let isSorted = true;
 	for (let i = 0; i < list.length - 1; i++) {
 		if (valueMap[list[i]] > valueMap[list[i + 1]]) {
-			isSorted = false;
+			// isSorted = false;
 			let a = list[i];
 			let b = list[i + 1];
 
