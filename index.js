@@ -74,8 +74,8 @@ class Board {
 		blackSide = rotateMatrix(blackSide);
 
 		for (let i = 0; i < 4; i++) {
-			let currentWhiteRank = 4 - i;
-			let currentBlackRank = 5 + i;
+			let currentWhiteRank = i + 4; // adjusted for matricial notation
+			let currentBlackRank = 3 - i;
 
 			// if that rank is NOT in the buffer list, sweep it
 			if (!bufferRanks.includes(currentWhiteRank))
@@ -109,7 +109,7 @@ class Board {
         boardMatrix[from[0]][from[1]] = '';
 
         this.state = this.__setBoardStateFromMatrix(boardMatrix);
-        this.state = this.performSweep([to_algebraic(from)[1], to_algebraic(to)[1]]);
+        this.state = this.performSweep([from[0], to[0]]);
 
         return this.state;
     }
