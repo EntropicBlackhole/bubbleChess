@@ -99,9 +99,9 @@ class Board {
         let boardMatrix = this.getBoardMatrix();
         const piece = boardMatrix[from[0]][from[1]];
 
-        console.log(piece);
-        console.log(from);
-        console.log(to);
+        // console.log(piece);
+        // console.log(from);
+        // console.log(to);
 
         // Validate if move is legal
 
@@ -156,10 +156,26 @@ function to_algebraic(arg) {
     return (file + rank);
 }
 
-console.log('before:', board.getBoardMatrix());
+/*
+	DEBUGGING:
+	Add here the move list. Every move has the following structure: [from, to]
+*/
+const moves = [
+	['e2', 'e4'],
+	['e7', 'e5'],
+	['b2', 'b3'],
+	['f8', 'c4']
+]
 
-board.makeMove(to_matricial('e2'), to_matricial('e4'));
-console.log('after:', board.getBoardMatrix());
+_debug_printBoard(board.getBoardMatrix());
+
+for (let move of moves) {
+	board.makeMove(to_matricial(move[0]), to_matricial(move[1]));
+	_debug_printBoard(board.getBoardMatrix());
+}
+
+// board.makeMove(to_matricial('e2'), to_matricial('e4'));
+// console.log('after:', board.getBoardMatrix());
 
 // console.log(bubbleSort([3, 6, 3, 2, 3, 13, 9, 1, 4]))
 
@@ -170,4 +186,28 @@ function rotateMatrix(matrix) {
 		returnMatrix.push(matrix[i].toReversed());
 	}
 	return returnMatrix;
+}
+
+function _debug_printBoard(boardMatrix) {
+	
+	console.log('---------------');
+
+	let boardDisplay = '';
+	for (let r = 0; r < 8; r++) for (let c = 0; c < 9; c++) {
+		
+		if (c === 8) {
+			console.log(boardDisplay);
+			boardDisplay = '';
+			continue;
+		}
+
+		if (boardMatrix[r][c] === '') {
+			boardDisplay += (((r + c) % 2 === 0) ? '.' : ' ');
+		}
+		else {
+			boardDisplay += boardMatrix[r][c];
+		}
+
+		boardDisplay += ' ';
+	}
 }
