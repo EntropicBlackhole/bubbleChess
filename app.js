@@ -13,6 +13,10 @@ const pieceCSSMap = {
 	K: 'wk',
 };
 
+const files = [
+	'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'
+];
+
 class ChessUI {
 	constructor(boardInstance) {
 		this.board = boardInstance;
@@ -33,6 +37,7 @@ class ChessUI {
 		this.attachEventListeners();
 	}
 
+
 	initGrid() {
 		this.squaresLayer.innerHTML = '';
 		for (let r = 0; r < 8; r++) {
@@ -40,6 +45,10 @@ class ChessUI {
 				const square = document.createElement('div');
 				const isLight = (r + c) % 2 === 0;
 				square.className = `square ${isLight ? 'light' : 'dark'}`;
+
+				square.innerHTML = `<p class="tooltip rank ${isLight ? 'dark' : 'light'}"> ${c === 0 ? (8 - r) : ''}</p>
+									<p class="tooltip file ${isLight ? 'dark' : 'light'}">${r === 7 ? files[c] : ''} </p>`;
+
 				this.squaresLayer.appendChild(square);
 			}
 		}

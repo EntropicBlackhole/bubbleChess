@@ -29,9 +29,38 @@
 .square {
     width: 100%;
     height: 100%;
+    position: relative;
 }
 .square.light { background-color: var(--light-square); }
 .square.dark { background-color: var(--dark-square); }
+
+.tooltip {
+    font-weight: bolder;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 1.3rem;
+}
+
+.tooltip.light {
+    color: var(--light-square);
+}
+
+.tooltip.dark {
+    color: var(--dark-square);
+}
+
+.tooltip.rank {
+    position: absolute;
+    top: 3%;
+    left: 5%;
+    margin: 0;
+}
+
+.tooltip.file {
+    position: absolute;
+    bottom: 3%;
+    right: 5%;
+    margin: 0;
+}
 
 .piece {
     position: absolute;
