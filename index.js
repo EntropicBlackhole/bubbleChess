@@ -1,13 +1,14 @@
 class Board {
 	constructor() {
 		this.state = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-	}
+	} //obv starting position, maybe a switch with a position variation if we wanna play different types of chess?
 
 	getBoardMatrix() {
 		let positions = this.state.split(' ')[0].split('/');
 		positions = positions.map((list) => {
 			return list.split('').flatMap((e) => {
-				if (!isNaN(parseInt(e))) return Array(parseInt(e)).fill('');
+				if (!isNaN(parseInt(e)))
+					return Array(parseInt(e)).fill(''); // god tier
 				else return e;
 			});
 		});
@@ -45,8 +46,10 @@ class Board {
 		return this.state;
 	}
 
+	isWhite = (piece) => { return piece !== '' && piece === piece.toUpperCase() };
+	isBlack = (piece) => { return piece !== '' && piece === piece.toLowerCase() };
+
 	performSweep(bufferRanks = []) {
-		// an array of ranks that are buffered, usually one when the movement is horizontal or two otherwise
 		const valueMap = {
 			'': 0,
 			p: 1,
@@ -63,56 +66,172 @@ class Board {
 			K: Infinity,
 		};
 
-		const boardMatrix = this.getBoardMatrix();
+		let matrix = this.getBoardMatrix();
+		// 7 tick array
+		let frames = [[], [], [], [], [], [], []];
 
-		// first split in half and rotate top half
+		for (let step = 0; step < 7; step++) {
+			// white sweep ltr
+			for (let r = 4; r < 8; r++) {
+				if (!bufferRanks.includes(8 - r)) {
+					let c1 = step;
+					let c2 = step + 1;
+					let didSwap = valueMap[matrix[r][c1]] > valueMap[matrix[r][c2]];
 
-		let blackSide = [];
-		for (let i = 0; i < 4; i++) blackSide.push(boardMatrix.shift());
+					if (didSwap) {
+						let temp = matrix[r][c1];
+						matrix[r][c1] = matrix[r][c2];
+						matrix[r][c2] = temp;
+					}
+					frames[step].push({
+						type: didSwap ? 'swap' : 'noswap',
+						r: r,
+						c1: c1,
+						c2: c2,
+					});
+				}
+			}
 
-		let whiteSide = boardMatrix;
-		blackSide = rotateMatrix(blackSide);
+			// black sweep rtl
+			for (let r = 0; r < 4; r++) {
+				if (!bufferRanks.includes(8 - r)) {
+					let c1 = 7 - step;
+					let c2 = 6 - step;
+					let didSwap = valueMap[matrix[r][c1]] > valueMap[matrix[r][c2]];
 
-		for (let i = 0; i < 4; i++) {
-			let currentWhiteRank = i + 4; // adjusted for matricial notation
-			let currentBlackRank = 3 - i;
-
-			// if that rank is NOT in the buffer list, sweep it
-			if (!bufferRanks.includes(currentWhiteRank))
-				bubbleSort(whiteSide[i], valueMap);
-
-			// if that rank is NOT in the buffer list, sweep it
-			if (!bufferRanks.includes(currentBlackRank))
-				bubbleSort(blackSide[i], valueMap);
+					if (didSwap) {
+						let temp = matrix[r][c1];
+						matrix[r][c1] = matrix[r][c2];
+						matrix[r][c2] = temp;
+					}
+					frames[step].push({
+						type: didSwap ? 'swap' : 'noswap',
+						r: r,
+						c1: c1,
+						c2: c2,
+					});
+				}
+			}
 		}
 
-		// we flip back the black side of the board and compose the full board.
-		blackSide = rotateMatrix(blackSide);
-		const resultMatrix = [...blackSide, ...whiteSide];
-
-		return this.__setBoardStateFromMatrix(resultMatrix);
+		this.state = this.__setBoardStateFromMatrix(matrix);
+		return { fen: this.state, frames: frames, buffers: bufferRanks };
 	}
 
-    makeMove(from, to) {
-        // from, to : Alg -> [r, c]
+	makeMove(from, to, chessUI) {
+		if (!this.resolveMove(from, to)) return false;
 
-        let boardMatrix = this.getBoardMatrix();
-        const piece = boardMatrix[from[0]][from[1]];
+		let matrix = this.getBoardMatrix();
+		let piece = matrix[from[0]][from[1]];
 
-        // console.log(piece);
-        // console.log(from);
-        // console.log(to);
+		if (piece === 'P' && to[0] === 0) piece = 'Q';
+		if (piece === 'p' && to[0] === 7) piece = 'q';
 
-        // Validate if move is legal
+		
+		// console.log(piece)
+		matrix[to[0]][to[1]] = piece;
+		matrix[from[0]][from[1]] = '';
+		this.state = this.__setBoardStateFromMatrix(matrix);
+		// console.log(this.state)
+		// chessUI.clearSelection()
+		// chessUI.renderPieces()
 
-        boardMatrix[to[0]][to[1]] = piece;
-        boardMatrix[from[0]][from[1]] = '';
+		let startRank = 8 - from[0];
+		let endRank = 8 - to[0];
+		let buffers = [startRank];
+		if (startRank !== endRank) buffers.push(endRank);
 
-        this.state = this.__setBoardStateFromMatrix(boardMatrix);
-        this.state = this.performSweep([from[0], to[0]]);
+		let payload = this.performSweep(buffers);
 
-        return this.state;
-    }
+		let stateParts = this.state.split(' ');
+		stateParts[1] = stateParts[1] === 'w' ? 'b' : 'w';
+		this.state = stateParts.join(' ');
+		payload.fen = this.state;
+
+		return payload;
+	}
+
+	resolveMove(start, end) {
+		//q hermoso
+		const matrix = this.getBoardMatrix();
+		const piece = matrix[start[0]][start[1]];
+		const target = matrix[end[0]][end[1]];
+
+		if (piece === '' || (start[0] === end[0] && start[1] === end[1]))
+			return false;
+
+		// turn validation
+		const activeColor = this.state.split(' ')[1]; // extrae 'w' o 'b' del fen
+		if (activeColor === 'w' && this.isBlack(piece)) return false;
+		if (activeColor === 'b' && this.isWhite(piece)) return false;
+
+		// no friendly fire
+		if (target !== '') {
+			if (this.isWhite(piece) && this.isWhite(target)) return false;
+			if (this.isBlack(piece) && this.isBlack(target)) return false;
+		}
+
+		const deltaR = end[0] - start[0];
+		const deltaC = end[1] - start[1];
+		const absDr = Math.abs(deltaR);
+		const absDc = Math.abs(deltaC);
+		const type = piece.toLowerCase();
+
+		// console.log(deltaR, deltaC);
+
+		// console.log(type)
+
+		switch (
+			type // dont EVER touch this, fuck this shit
+		) {
+			case 'n':
+				return (absDr === 2 && absDc === 1) || (absDr === 1 && absDc === 2);
+			case 'k':
+				return absDr <= 1 && absDc <= 1;
+			case 'r':
+				if (absDr !== 0 && absDc !== 0) return false;
+				return this.__checkLineOfSight(matrix, start, end, deltaR, deltaC);
+			case 'b':
+				if (absDr !== absDc) return false;
+				return this.__checkLineOfSight(matrix, start, end, deltaR, deltaC);
+			case 'q':
+				if (absDr !== 0 && absDc !== 0 && absDr !== absDc) return false;
+				return this.__checkLineOfSight(matrix, start, end, deltaR, deltaC);
+			case 'p':
+				const dir = this.isWhite(piece) ? -1 : 1;
+				const startRank = this.isWhite(piece) ? 6 : 1;
+				// console.log(dir)
+				if (deltaC === 0) {
+					if (deltaR === dir && target === '') return true;
+					if (
+						deltaR === dir * 2 &&
+						start[0] === startRank &&
+						target === '' &&
+						matrix[start[0] + dir][start[1]] === ''
+					)
+						return true;
+				} else if (absDc === 1 && deltaR === dir && target !== '') {
+					return true;
+				}
+				return false;
+		}
+		return false;
+	}
+
+	__checkLineOfSight(matrix, start, end, deltaR, deltaC) {
+		// raytracing much?
+		const stepR = Math.sign(deltaR);
+		const stepC = Math.sign(deltaC);
+		let currR = start[0] + stepR;
+		let currC = start[1] + stepC;
+
+		while (currR !== end[0] || currC !== end[1]) {
+			if (matrix[currR][currC] !== '') return false;
+			currR += stepR;
+			currC += stepC;
+		}
+		return true;
+	}
 }
 
 // "krnbqrbn/pppppppp/8/8/4P3/8/PPPP1PPP/NBRQBNRK w - - 0 1"
@@ -121,7 +240,7 @@ let board = new Board();
 
 // console.log(board.performSweep([2, 4]));
 
-function bubbleSort(list, valueMap) {
+function bubbleSort(list, valueMap) { // the heart of it all
 	// this supports a valueMap, so we can do shit like swapping two pieces based on value, keeping those pieces as chars
 	// let isSorted = true;
 	for (let i = 0; i < list.length - 1; i++) {
@@ -140,39 +259,37 @@ function bubbleSort(list, valueMap) {
 }
 
 function to_matricial(arg) {
+	const row = 8 - Number(arg[1]);
+	const col = arg.charCodeAt(0) - 97; // a = 97
 
-    const row = 8 - Number(arg[1]);
-    const col = arg.charCodeAt(0) - 97; // a = 97
-
-    return [row, col];
+	return [row, col];
 }
 
 function to_algebraic(arg) {
+	const file = String.fromCharCode(arg[1] + 97);
+	const rank = 8 - arg[0].toString();
 
-    const file = String.fromCharCode(arg[1] + 97);
-    const rank = 8 - arg[0].toString();
-
-    console.log(file + rank);
-    return (file + rank);
+	// console.log(file + rank);
+	return file + rank;
 }
 
 /*
 	DEBUGGING:
 	Add here the move list. Every move has the following structure: [from, to]
 */
-const moves = [
-	['e2', 'e4'],
-	['e7', 'e5'],
-	['b2', 'b3'],
-	['f8', 'c4']
-]
+// const moves = [
+// 	['e2', 'e4'],
+// 	['e7', 'e5'],
+// 	['b2', 'b3'],
+// 	['f8', 'c4'],
+// ]; // vole
 
-_debug_printBoard(board.getBoardMatrix());
+// _debug_printBoard(board.getBoardMatrix());
 
-for (let move of moves) {
-	board.makeMove(to_matricial(move[0]), to_matricial(move[1]));
-	_debug_printBoard(board.getBoardMatrix());
-}
+// for (let move of moves) {
+// 	board.makeMove(to_matricial(move[0]), to_matricial(move[1]));
+// 	_debug_printBoard(board.getBoardMatrix());
+// }
 
 // board.makeMove(to_matricial('e2'), to_matricial('e4'));
 // console.log('after:', board.getBoardMatrix());
@@ -183,31 +300,29 @@ function rotateMatrix(matrix) {
 	//assuming it's as deep as 2 levels
 	const returnMatrix = [];
 	for (let i = matrix.length - 1; i >= 0; i--) {
-		returnMatrix.push(matrix[i].toReversed());
+		returnMatrix.push(matrix[i].toReversed()); // get rotated idiot
 	}
-	return returnMatrix;
+	return returnMatrix; // insert shark being flipped from (x, y) to (-y, x) by diver
 }
 
 function _debug_printBoard(boardMatrix) {
-	
 	console.log('---------------');
 
 	let boardDisplay = '';
-	for (let r = 0; r < 8; r++) for (let c = 0; c < 9; c++) {
-		
-		if (c === 8) {
-			console.log(boardDisplay);
-			boardDisplay = '';
-			continue;
-		}
+	for (let r = 0; r < 8; r++)
+		for (let c = 0; c < 9; c++) {
+			if (c === 8) {
+				console.log(boardDisplay);
+				boardDisplay = '';
+				continue;
+			}
 
-		if (boardMatrix[r][c] === '') {
-			boardDisplay += (((r + c) % 2 === 0) ? '.' : ' ');
-		}
-		else {
-			boardDisplay += boardMatrix[r][c];
-		}
+			if (boardMatrix[r][c] === '') {
+				boardDisplay += (r + c) % 2 === 0 ? '.' : ' ';
+			} else {
+				boardDisplay += boardMatrix[r][c];
+			}
 
-		boardDisplay += ' ';
-	}
+			boardDisplay += ' ';
+		}
 }

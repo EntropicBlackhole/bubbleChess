@@ -1,0 +1,132 @@
+:root {
+    --light-square: #ebecd0;
+    --dark-square: #739552; 
+    --square-size: 12.5%; 
+}
+
+.board-wrapper {
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 1 / 1;
+    position: relative;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.grid-board, .pieces-board {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+}
+
+.grid-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+}
+
+.square {
+    width: 100%;
+    height: 100%;
+}
+.square.light { background-color: var(--light-square); }
+.square.dark { background-color: var(--dark-square); }
+
+.piece {
+    position: absolute;
+    width: var(--square-size);
+    height: var(--square-size);
+    background-size: 90%; /* deja un pequeño margen para que no toquen los bordes */
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: grab;
+    
+    transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 10;
+}
+
+.piece:active {
+    cursor: grabbing;
+    z-index: 100; 
+}
+
+
+/* white pieces */
+.wp { background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg'); }
+.wn { background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg'); }
+.wb { background-image: url('https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg'); }
+.wr { background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg'); }
+.wq { background-image: url('https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg'); }
+.wk { background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg'); }
+
+/* black pieces */
+.bp { background-image: url('https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg'); }
+.bn { background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg'); }
+.bb { background-image: url('https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg'); }
+.br { background-image: url('https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg'); }
+.bq { background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg'); }
+.bk { background-image: url('https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg'); }
+
+.hints-board {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.highlight-selected {
+    position: absolute;
+    width: var(--square-size);
+    height: var(--square-size);
+    background-color: rgba(235, 235, 90, 0.5);
+}
+
+.hint-wrapper {
+    position: absolute;
+    width: var(--square-size);
+    height: var(--square-size);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hint-dot {
+    width: 32%;
+    height: 32%;
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 50%;
+}
+
+.hint-capture {
+    width: 85%;
+    height: 85%;
+    border: 6px solid rgba(0, 0, 0, 0.15);
+    border-radius: 50%;
+    background: transparent;
+}
+
+.sort-overlay {
+    position: absolute;
+    width: var(--square-size);
+    height: var(--square-size);
+    transition: background-color 0.15s ease; 
+}
+
+/* might delete these 3 */
+
+.compare-blue {
+    background-color: rgba(64, 169, 255, 0.5); 
+    box-shadow: inset 0 0 10px rgba(64, 169, 255, 0.8);
+}
+
+.swap-green {
+    background-color: rgba(92, 219, 92, 0.55);
+    box-shadow: inset 0 0 10px rgba(92, 219, 92, 0.8);
+}
+
+.noswap-red {
+    background-color: rgba(255, 77, 79, 0.45);
+    box-shadow: inset 0 0 10px rgba(255, 77, 79, 0.8);
+}

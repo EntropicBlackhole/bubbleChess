@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bubbleChess</title>
+
+  <link href="https://devchrisacosta.net/general_css" rel="stylesheet">
+  
+  <link href="./styles.css" rel="stylesheet">
+</head>
+<body>
+
+  <div class="dashboard-wrapper">
+      <div class="section">
+          <div class="flex-between" style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
+              <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                  <span style="color: var(--btn-bg);">♜</span> xd
+              </h2>
+              
+              <div class="flex-center">
+                  <span style="font-size: 0.85em; font-weight: bold; opacity: 0.8;">Tema</span>
+                  <label class="theme-switch">
+                    <input type="checkbox" id="themeToggle" onchange="handleThemeSwitch(this)" checked />
+                    <span class="slider"></span>
+                  </label>
+              </div>
+          </div>
+
+          <div style="display: flex; justify-content: center; align-items: center; padding: 20px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border-color);">
+              
+              <div id="chess-container" class="board-wrapper">
+                  <div id="squares-layer" class="grid-board"></div>
+
+                  <div id="pieces-layer" class="pieces-board"></div>
+              </div>
+
+          </div>
+      </div>
+  </div>
+
+  <script>
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('themeToggle').checked = (savedTheme === 'dark');
+
+    function handleThemeSwitch(checkbox) {
+      const target = checkbox.checked ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', target);
+      localStorage.setItem('theme', target);
+    }
+  </script>
+
+  <script src="./index.js"></script>
+  
+  <script src="./app.js"></script>
+
+</body>
+</html>
