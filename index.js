@@ -3,6 +3,16 @@ class Board {
 		this.state = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 	} //obv starting position, maybe a switch with a position variation if we wanna play different types of chess?
 
+	setEnPassant(coords) {
+
+		let stateArray = this.state.split(' ');
+
+		stateArray[3] = (coords === 0 ? '-' : to_algebraic(coords));
+		this.state = stateArray.join(' ');
+
+		console.log(this.state);
+	}
+
 	getBoardMatrix() {
 		let positions = this.state.split(' ')[0].split('/');
 		positions = positions.map((list) => {
@@ -127,6 +137,35 @@ class Board {
 		if (piece === 'P' && to[0] === 0) piece = 'Q';
 		if (piece === 'p' && to[0] === 7) piece = 'q';
 
+		// Check for en-passant
+		if ((piece === 'p' || piece === 'P') && to_algebraic(to) === this.state.split(' ')[3]) {
+
+			console.log('en passant detected')
+
+			const epSlot = [
+				(piece === 'p' ? to[0] - 1 : to[0] + 1), to[1]
+			]
+
+			console.log(epSlot);
+			matrix[epSlot[0]][epSlot[1]] = '';
+
+			// For some reason, the piece gets removed from the board AFTER the bubble sweep is completed.
+			// Probably because of how the board renders (?)
+		}
+
+		// Check for pawn double advance move
+		if ((piece === 'p' || piece === 'P') && Math.abs(to[0] - from[0]) === 2) {
+			const epSlot = [
+				(from[0] + to[0]) / 2,
+				to[1]
+			];
+
+			this.setEnPassant(epSlot);
+			console.log(this.state);
+		}
+		else {
+			this.setEnPassant(0);
+		}
 		
 		// console.log(piece)
 		matrix[to[0]][to[1]] = piece;
@@ -201,6 +240,9 @@ class Board {
 				const dir = this.isWhite(piece) ? -1 : 1;
 				const startRank = this.isWhite(piece) ? 6 : 1;
 				// console.log(dir)
+
+				const enpassant = this.state.split(' ')[3] // en passant coordinates 
+
 				if (deltaC === 0) {
 					if (deltaR === dir && target === '') return true;
 					if (
@@ -210,7 +252,8 @@ class Board {
 						matrix[start[0] + dir][start[1]] === ''
 					)
 						return true;
-				} else if (absDc === 1 && deltaR === dir && target !== '') {
+				} else if (absDc === 1 && deltaR === dir && 
+					((enpassant === '-' ? false : to_algebraic(end) === enpassant) || target !== '')) {
 					return true;
 				}
 				return false;
