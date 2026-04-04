@@ -185,7 +185,11 @@ class ChessUI {
 			`.piece[data-r="${end[0]}"][data-c="${end[1]}"]`,
 		);
 
-		if (targetPiece) targetPiece.remove();
+		if ( targetPiece && (
+			targetPiece.className.includes('bk') ||
+			targetPiece.className.includes('wk'))
+		) this.handleCheckmate(targetPiece.className);
+			if (targetPiece) targetPiece.remove();
 
 		if (piece) {
 			piece.style.transform = `translate(${end[1] * 100}%, ${end[0] * 100}%)`;
@@ -253,6 +257,20 @@ class ChessUI {
 		}
 		await this.sleep(300); 
 		this.hintsLayer.innerHTML = '';
+	}
+
+	handleCheckmate(targetPiece) { // really its a king capture ig
+		const win = targetPiece.includes('bk') ? 1 : targetPiece.includes('wk') ? 0 : -1
+		if (win == -1) throw Error(`${targetPiece} does not imply checkmate, no win state exists`);
+		if (win === 1) {
+			// block the ui from the mouse
+			this.boardWrapper.style.pointerEvents = 'none';
+			alert('white wins');
+		} else if (win === 0) { // planning to do more, just need basic checkmate handling
+			// block the ui from the mouse
+			this.boardWrapper.style.pointerEvents = 'none';
+			alert('black wins');
+		}
 	}
 
 	drawSortHint(r, c, colorClass) {

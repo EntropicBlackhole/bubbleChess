@@ -4,12 +4,9 @@ class Board {
 	} //obv starting position, maybe a switch with a position variation if we wanna play different types of chess?
 
 	setEnPassant(coords) {
-
 		let stateArray = this.state.split(' ');
-
 		stateArray[3] = (coords === 0 ? '-' : to_algebraic(coords));
 		this.state = stateArray.join(' ');
-
 		console.log(this.state);
 	}
 
@@ -128,7 +125,7 @@ class Board {
 		return { fen: this.state, frames: frames, buffers: bufferRanks };
 	}
 
-	makeMove(from, to, chessUI) {
+	makeMove(from, to) {
 		if (!this.resolveMove(from, to)) return false;
 
 		let matrix = this.getBoardMatrix();
@@ -140,17 +137,24 @@ class Board {
 		// Check for en-passant
 		if ((piece === 'p' || piece === 'P') && to_algebraic(to) === this.state.split(' ')[3]) {
 
-			console.log('en passant detected')
+			// console.log('en passant detected')
 
 			const epSlot = [
 				(piece === 'p' ? to[0] - 1 : to[0] + 1), to[1]
 			]
 
-			console.log(epSlot);
+			// console.log(epSlot);
 			matrix[epSlot[0]][epSlot[1]] = '';
 
 			// For some reason, the piece gets removed from the board AFTER the bubble sweep is completed.
 			// Probably because of how the board renders (?)
+
+			// this is a known bug with pawn promotions too, the same thing happens and ive spent countless hours trying to fix it to no avail
+			// ive played around with the rendering functions and promotion logic but nothing, i think it probably has to do with the fact
+			// that promotions need to happen async to run on a different thread than the board sweep
+
+			// wait nonon i think this has to do with the playSweepAnimation function in app.js, the board is capable of making the promotion on the spot
+			// but the render is only noticing that afterwards
 		}
 
 		// Check for pawn double advance move
@@ -161,7 +165,7 @@ class Board {
 			];
 
 			this.setEnPassant(epSlot);
-			console.log(this.state);
+			// console.log(this.state);
 		}
 		else {
 			this.setEnPassant(0);
