@@ -1,6 +1,7 @@
 class Board {
 	constructor() {
 		this.state = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+		this.moves = [];
 	} //obv starting position, maybe a switch with a position variation if we wanna play different types of chess?
 
 	setEnPassant(coords) {
@@ -130,6 +131,8 @@ class Board {
 
 		let matrix = this.getBoardMatrix();
 		let piece = matrix[from[0]][from[1]];
+
+		this.pushAlgebraicMove(from, to, matrix[to[0]][to[1]]);
 
 		if (piece === 'P' && to[0] === 0) piece = 'Q';
 		if (piece === 'p' && to[0] === 7) piece = 'q';
@@ -278,6 +281,244 @@ class Board {
 			currC += stepC;
 		}
 		return true;
+	}
+
+	pushAlgebraicMove(from, to, capture) {
+	
+		const stateParts = this.state.split(' ');
+		const newLine = (stateParts[1] === 'w');
+
+		const matrix = this.getBoardMatrix();
+		const piece = matrix[from[0]][from[1]];
+
+		let move = '';
+		let attacks = [];
+
+		if (piece != 'P' && piece != 'p') {
+			move += piece.toUpperCase();
+
+			// Dissambiguate:
+			// Will check if there are other pieces that could perform the same move and, in that case, will
+			// dissambiguate by specifying the file or rank, in that order of preference.
+
+			let conflicts = [];
+
+			const deltaB = [
+				[1, 1],
+				[-1, -1],
+				[1, -1],
+				[-1, 1]
+			];
+
+			const deltaN = [
+				[2, 1],
+				[2, -1],
+				[-2, 1],
+				[-2, -1],
+				[1, 2],
+				[1, -2],
+				[-1, 2],
+				[-1, -2]
+			];
+
+			const deltaR = [
+				[1, 0],
+				[0, 1],
+				[-1, 0],
+				[0, -1]
+			];
+
+			switch (piece.toUpperCase()) {
+
+				case 'N':
+
+					
+
+					for (let v of deltaN) {
+
+						if (to[0] + v[0] < 0 || to[0] + v[0] > 7 || to[1] + v[1] < 0 || to[1] + v[1] > 7) {
+							continue;
+						}
+
+						if (matrix[to[0] + v[0]][to[1] + v[1]] === piece) {
+							conflicts.push([to[0] + v[0], to[1] + v[1]]);
+						}
+
+						if (matrix[to[0] + v[0]][to[1] + v[1]] != '') {
+							attacks.push(matrix[to[0] + v[0]][to[1] + v[1]]);
+						}
+					}
+
+					break;
+
+				case 'B':
+
+					for (let v of deltaB) {
+						let i = 1;
+						while (to[0] + (i * v[0]) > 0 && to[0] + (i * v[0]) < 8 &&
+							to[1] + (i * v[1]) > 0 && to[1] + (i * v[1]) < 8) {
+
+							const sq = matrix[to[0] + (i * v[0]), to[1] + (i * v[1])];
+							if (sq != '') {
+								if (sq === piece) {
+									conflicts.push([to[0] + (i * v[0]), to[1] + (i * v[1])]);
+								}
+
+								attacks.push(sq);
+
+								break;
+							}
+						}
+					}
+
+					break;
+				
+				case 'R':
+
+					for (let v of deltaR) {
+						let i = 1;
+						while (to[0] + (i * v[0]) > 0 && to[0] + (i * v[0]) < 8 &&
+							to[1] + (i * v[1]) > 0 && to[1] + (i * v[1]) < 8) {
+
+							const sq = matrix[to[0] + (i * v[0]), to[1] + (i * v[1])];
+							if (sq != '') {
+								if (sq === piece) {
+									conflicts.push([to[0] + (i * v[0]), to[1] + (i * v[1])]);
+								}
+
+								attacks.push(sq);
+
+								break;
+							}
+						}
+					}
+
+					break;
+				
+				case 'Q':
+
+					for (let v of deltaR) {
+						let i = 1;
+						while (to[0] + (i * v[0]) > 0 && to[0] + (i * v[0]) < 8 &&
+							to[1] + (i * v[1]) > 0 && to[1] + (i * v[1]) < 8) {
+
+							const sq = matrix[to[0] + (i * v[0]), to[1] + (i * v[1])];
+							if (sq != '') {
+								if (sq === piece) {
+									conflicts.push([to[0] + (i * v[0]), to[1] + (i * v[1])]);
+								}
+
+								attacks.push(sq);
+
+								break;
+							}
+						}
+					}
+
+					for (let v of deltaB) {
+						let i = 1;
+						while (to[0] + (i * v[0]) > 0 && to[0] + (i * v[0]) < 8 &&
+							to[1] + (i * v[1]) > 0 && to[1] + (i * v[1]) < 8) {
+
+							const sq = matrix[to[0] + (i * v[0]), to[1] + (i * v[1])];
+							if (sq != '') {
+								if (sq === piece) {
+									conflicts.push([to[0] + (i * v[0]), to[1] + (i * v[1])]);
+								}
+
+								attacks.push(sq);
+
+								break;
+							}
+						}
+					}
+
+					break;
+			}
+
+			if (conflicts > 1) {
+
+				let dissambiguateType = 0;
+
+				for (let c of conflicts) {
+					if (c[1] === from[1] && c != from) { // Two pieces in the same file
+						dissambiguateType += 1;
+						break;
+					}
+				}
+
+				for (let c of conflicts) {
+					if (c[0] === from[0] && c != from) { // Two pieces in the same rank
+						dissambiguateType += 2;
+						break;
+					}
+				}
+
+				switch (dissambiguateType) {
+
+					case 0:
+						move += to_algebraic(from).charAt(0);
+						break;
+
+					case 1:
+						move += to_algebraic(from).charAt(1);
+						break;
+
+					case 2:
+						move += to_algebraic(from).charAt(0);
+						break;
+
+					case 3:
+						move += to_algebraic(from);
+						break;
+				}
+
+			}
+
+			// Captures
+			if (capture != '') {
+				move += 'x';
+			}
+		
+		}
+		else {
+			if (capture != '') {
+				move += to_algebraic(from).charAt(0) + 'x';
+			}
+		}
+
+		// Destination
+		move += to_algebraic(to);
+
+		// Promotion (currently, forced to queen, so 'e8=Q')
+		if (piece.toLowerCase() === 'p' && to[0] === ((piece.toLowerCase() === piece) ? 7 : 0)) {
+			move += '=Q';			
+		}
+
+		// Check or Checkmate notation
+		for (let p of attacks) {
+
+			if (capture === 'K' || capture === 'k') {
+				move += '#';
+				break;
+			}
+
+			if ((piece.toUpperCase() === piece && p === 'k') || piece.toLowerCase() === piece && p === 'K') {
+				move += '+';	
+				break;			
+			}
+		}
+
+		if (newLine) {
+			move = String(this.moves.length + 1) + '. ' + move
+			this.moves.push(move);
+		}
+		else {
+			this.moves[this.moves.length - 1] += (' ' + move); 
+		}
+
+		// DEBUG
+		console.log(this.moves);
 	}
 }
 
