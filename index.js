@@ -1,11 +1,12 @@
 class Board {
 	constructor() {
 		this.state = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+		this.moves = [];
 	} //obv starting position, maybe a switch with a position variation if we wanna play different types of chess?
 
 	setEnPassant(coords) {
 		let stateArray = this.state.split(' ');
-		stateArray[3] = (coords === 0 ? '-' : to_algebraic(coords));
+		stateArray[3] = coords === 0 ? '-' : to_algebraic(coords);
 		this.state = stateArray.join(' ');
 		console.log(this.state);
 	}
@@ -53,8 +54,12 @@ class Board {
 		return this.state;
 	}
 
-	isWhite = (piece) => { return piece !== '' && piece === piece.toUpperCase() };
-	isBlack = (piece) => { return piece !== '' && piece === piece.toLowerCase() };
+	isWhite = (piece) => {
+		return piece !== '' && piece === piece.toUpperCase();
+	};
+	isBlack = (piece) => {
+		return piece !== '' && piece === piece.toLowerCase();
+	};
 
 	performSweep(bufferRanks = []) {
 		const valueMap = {
@@ -132,32 +137,34 @@ class Board {
 		let piece = matrix[from[0]][from[1]];
 
 		// whyy
+		this.pushAlgebraicMove(from, to, matrix[to[0]][to[1]]);
+
 		if (piece === 'P' && to[0] === 0) piece = 'Q';
 		if (piece === 'p' && to[0] === 7) piece = 'q';
 
 		// Check for en-passant
-		if ((piece === 'p' || piece === 'P') && to_algebraic(to) === this.state.split(' ')[3]) {
-
+		if (
+			(piece === 'p' || piece === 'P') &&
+			to_algebraic(to) === this.state.split(' ')[3]
+		) {
 			// console.log('en passant detected')
 
-			const epSlot = [
-				(piece === 'p' ? to[0] - 1 : to[0] + 1), to[1]
-			];
+			const epSlot = [piece === 'p' ? to[0] - 1 : to[0] + 1, to[1]];
 
 			// console.log(epSlot);
 			matrix[epSlot[0]][epSlot[1]] = '';
 			//why the fuck wont you work
-			
+
 			// For some reason, the piece gets removed from the board AFTER the bubble sweep is completed.
 			// Probably because of how the board renders (?)
-			
+
 			// this is a known bug with pawn promotions too, the same thing happens and ive spent countless hours trying to fix it to no avail
 			// ive played around with the rendering functions and promotion logic but nothing, i think it probably has to do with the fact
 			// that promotions need to happen async to run on a different thread than the board sweep
-			
+
 			// wait nonon i think this has to do with the playSweepAnimation function in app.js, the board is capable of making the promotion on the spot
 			// but the render is only noticing that afterwards
-			
+
 			// update: still not fucking fixed
 			// before, only god and i knew how this code worked
 			// now, no one fking knows
@@ -168,18 +175,14 @@ class Board {
 
 		// Check for pawn double advance move
 		if ((piece === 'p' || piece === 'P') && Math.abs(to[0] - from[0]) === 2) {
-			const epSlot = [
-				(from[0] + to[0]) / 2,
-				to[1]
-			];
+			const epSlot = [(from[0] + to[0]) / 2, to[1]];
 
 			this.setEnPassant(epSlot);
 			// console.log(this.state);
-		}
-		else {
+		} else {
 			this.setEnPassant(0);
 		}
-		
+
 		// console.log(piece)
 		matrix[to[0]][to[1]] = piece;
 		matrix[from[0]][from[1]] = '';
@@ -233,8 +236,8 @@ class Board {
 
 		// console.log(type)
 
-		switch ( 
-		type // dont EVER touch this, fuck this shit
+		switch (
+			type // dont EVER touch this, fuck this shit
 		) {
 			case 'n':
 				return (absDr === 2 && absDc === 1) || (absDr === 1 && absDc === 2);
@@ -254,7 +257,7 @@ class Board {
 				const startRank = this.isWhite(piece) ? 6 : 1;
 				// console.log(dir)
 
-				const enpassant = this.state.split(' ')[3] // en passant coordinates 
+				const enpassant = this.state.split(' ')[3]; // en passant coordinates
 
 				if (deltaC === 0) {
 					if (deltaR === dir && target === '') return true;
@@ -265,8 +268,12 @@ class Board {
 						matrix[start[0] + dir][start[1]] === ''
 					)
 						return true;
-				} else if (absDc === 1 && deltaR === dir && 
-					((enpassant === '-' ? false : to_algebraic(end) === enpassant) || target !== '')) {
+				} else if (
+					absDc === 1 &&
+					deltaR === dir &&
+					((enpassant === '-' ? false : to_algebraic(end) === enpassant) ||
+						target !== '')
+				) {
 					return true;
 				}
 				return false;
@@ -288,6 +295,253 @@ class Board {
 		}
 		return true;
 	}
+
+	pushAlgebraicMove(from, to, capture) {
+		const stateParts = this.state.split(' ');
+		const newLine = stateParts[1] === 'w';
+
+		const matrix = this.getBoardMatrix();
+		const piece = matrix[from[0]][from[1]];
+
+		let move = '';
+		let attacks = [];
+
+		if (piece != 'P' && piece != 'p') {
+			move += piece.toUpperCase();
+
+			// Dissambiguate:
+			// Will check if there are other pieces that could perform the same move and, in that case, will
+			// dissambiguate by specifying the file or rank, in that order of preference.
+
+			let conflicts = [];
+
+			const deltaB = [
+				[1, 1],
+				[-1, -1],
+				[1, -1],
+				[-1, 1],
+			];
+
+			const deltaN = [
+				[2, 1],
+				[2, -1],
+				[-2, 1],
+				[-2, -1],
+				[1, 2],
+				[1, -2],
+				[-1, 2],
+				[-1, -2],
+			];
+
+			const deltaR = [
+				[1, 0],
+				[0, 1],
+				[-1, 0],
+				[0, -1],
+			];
+
+			switch (piece.toUpperCase()) {
+				case 'N':
+					for (let v of deltaN) {
+						if (
+							to[0] + v[0] < 0 ||
+							to[0] + v[0] > 7 ||
+							to[1] + v[1] < 0 ||
+							to[1] + v[1] > 7
+						) {
+							continue;
+						}
+
+						if (matrix[to[0] + v[0]][to[1] + v[1]] === piece) {
+							conflicts.push([to[0] + v[0], to[1] + v[1]]);
+						}
+
+						if (matrix[to[0] + v[0]][to[1] + v[1]] != '') {
+							attacks.push(matrix[to[0] + v[0]][to[1] + v[1]]);
+						}
+					}
+
+					break;
+
+				case 'B':
+					for (let v of deltaB) {
+						let i = 1;
+						while (
+							to[0] + i * v[0] > 0 &&
+							to[0] + i * v[0] < 8 &&
+							to[1] + i * v[1] > 0 &&
+							to[1] + i * v[1] < 8
+						) {
+							const sq = matrix[(to[0] + i * v[0], to[1] + i * v[1])];
+							if (sq != '') {
+								if (sq === piece) {
+									conflicts.push([to[0] + i * v[0], to[1] + i * v[1]]);
+								}
+
+								attacks.push(sq);
+
+								break;
+							}
+						}
+					}
+
+					break;
+
+				case 'R':
+					for (let v of deltaR) {
+						let i = 1;
+						while (
+							to[0] + i * v[0] > 0 &&
+							to[0] + i * v[0] < 8 &&
+							to[1] + i * v[1] > 0 &&
+							to[1] + i * v[1] < 8
+						) {
+							const sq = matrix[(to[0] + i * v[0], to[1] + i * v[1])];
+							if (sq != '') {
+								if (sq === piece) {
+									conflicts.push([to[0] + i * v[0], to[1] + i * v[1]]);
+								}
+
+								attacks.push(sq);
+
+								break;
+							}
+						}
+					}
+
+					break;
+
+				case 'Q':
+					for (let v of deltaR) {
+						let i = 1;
+						while (
+							to[0] + i * v[0] > 0 &&
+							to[0] + i * v[0] < 8 &&
+							to[1] + i * v[1] > 0 &&
+							to[1] + i * v[1] < 8
+						) {
+							const sq = matrix[(to[0] + i * v[0], to[1] + i * v[1])];
+							if (sq != '') {
+								if (sq === piece) {
+									conflicts.push([to[0] + i * v[0], to[1] + i * v[1]]);
+								}
+
+								attacks.push(sq);
+
+								break;
+							}
+						}
+					}
+
+					for (let v of deltaB) {
+						let i = 1;
+						while (
+							to[0] + i * v[0] > 0 &&
+							to[0] + i * v[0] < 8 &&
+							to[1] + i * v[1] > 0 &&
+							to[1] + i * v[1] < 8
+						) {
+							const sq = matrix[(to[0] + i * v[0], to[1] + i * v[1])];
+							if (sq != '') {
+								if (sq === piece) {
+									conflicts.push([to[0] + i * v[0], to[1] + i * v[1]]);
+								}
+
+								attacks.push(sq);
+
+								break;
+							}
+						}
+					}
+
+					break;
+			}
+
+			if (conflicts > 1) {
+				let dissambiguateType = 0;
+
+				for (let c of conflicts) {
+					if (c[1] === from[1] && c != from) {
+						// Two pieces in the same file
+						dissambiguateType += 1;
+						break;
+					}
+				}
+
+				for (let c of conflicts) {
+					if (c[0] === from[0] && c != from) {
+						// Two pieces in the same rank
+						dissambiguateType += 2;
+						break;
+					}
+				}
+
+				switch (dissambiguateType) {
+					case 0:
+						move += to_algebraic(from).charAt(0);
+						break;
+
+					case 1:
+						move += to_algebraic(from).charAt(1);
+						break;
+
+					case 2:
+						move += to_algebraic(from).charAt(0);
+						break;
+
+					case 3:
+						move += to_algebraic(from);
+						break;
+				}
+			}
+
+			// Captures
+			if (capture != '') {
+				move += 'x';
+			}
+		} else {
+			if (capture != '') {
+				move += to_algebraic(from).charAt(0) + 'x';
+			}
+		}
+
+		// Destination
+		move += to_algebraic(to);
+
+		// Promotion (currently, forced to queen, so 'e8=Q')
+		if (
+			piece.toLowerCase() === 'p' &&
+			to[0] === (piece.toLowerCase() === piece ? 7 : 0)
+		) {
+			move += '=Q';
+		}
+
+		// Check or Checkmate notation
+		for (let p of attacks) {
+			if (capture === 'K' || capture === 'k') {
+				move += '#';
+				break;
+			}
+
+			if (
+				(piece.toUpperCase() === piece && p === 'k') ||
+				(piece.toLowerCase() === piece && p === 'K')
+			) {
+				move += '+';
+				break;
+			}
+		}
+
+		if (newLine) {
+			move = String(this.moves.length + 1) + '. ' + move;
+			this.moves.push(move);
+		} else {
+			this.moves[this.moves.length - 1] += ' ' + move;
+		}
+
+		// DEBUG
+		console.log(this.moves);
+	}
 }
 
 // "krnbqrbn/pppppppp/8/8/4P3/8/PPPP1PPP/NBRQBNRK w - - 0 1"
@@ -296,7 +550,8 @@ let board = new Board();
 
 // console.log(board.performSweep([2, 4]));
 
-function bubbleSort(list, valueMap) { // the heart of it all
+function bubbleSort(list, valueMap) {
+	// the heart of it all
 	// this supports a valueMap, so we can do shit like swapping two pieces based on value, keeping those pieces as chars
 	// let isSorted = true;
 	for (let i = 0; i < list.length - 1; i++) {
