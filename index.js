@@ -131,6 +131,7 @@ class Board {
 		let matrix = this.getBoardMatrix();
 		let piece = matrix[from[0]][from[1]];
 
+		// whyy
 		if (piece === 'P' && to[0] === 0) piece = 'Q';
 		if (piece === 'p' && to[0] === 7) piece = 'q';
 
@@ -141,21 +142,29 @@ class Board {
 
 			const epSlot = [
 				(piece === 'p' ? to[0] - 1 : to[0] + 1), to[1]
-			]
+			];
 
 			// console.log(epSlot);
 			matrix[epSlot[0]][epSlot[1]] = '';
-
+			//why the fuck wont you work
+			
 			// For some reason, the piece gets removed from the board AFTER the bubble sweep is completed.
 			// Probably because of how the board renders (?)
-
+			
 			// this is a known bug with pawn promotions too, the same thing happens and ive spent countless hours trying to fix it to no avail
 			// ive played around with the rendering functions and promotion logic but nothing, i think it probably has to do with the fact
 			// that promotions need to happen async to run on a different thread than the board sweep
-
+			
 			// wait nonon i think this has to do with the playSweepAnimation function in app.js, the board is capable of making the promotion on the spot
 			// but the render is only noticing that afterwards
+			
+			// update: still not fucking fixed
+			// before, only god and i knew how this code worked
+			// now, no one fking knows
+			// if you ever find this, and are trying to debug this, pleas update the following counter
+			// hours lost to the heat death of the universe, wasted here: 7
 		}
+		// console.log(epSlot);
 
 		// Check for pawn double advance move
 		if ((piece === 'p' || piece === 'P') && Math.abs(to[0] - from[0]) === 2) {
@@ -224,8 +233,8 @@ class Board {
 
 		// console.log(type)
 
-		switch (
-			type // dont EVER touch this, fuck this shit
+		switch ( 
+		type // dont EVER touch this, fuck this shit
 		) {
 			case 'n':
 				return (absDr === 2 && absDc === 1) || (absDr === 1 && absDc === 2);

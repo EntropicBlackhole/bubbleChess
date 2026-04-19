@@ -195,13 +195,13 @@ class ChessUI {
 			piece.style.transform = `translate(${end[1] * 100}%, ${end[0] * 100}%)`;
 			piece.dataset.r = end[0];
 			piece.dataset.c = end[1];
-			setTimeout(callback, 250);
+			setTimeout(callback, 250); // could it be you? fuck you
 		} else {
 			callback();
 		}
 	}
 
-	async sleep(ms) {
+	async sleep(ms) { // little shit
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
@@ -281,7 +281,7 @@ class ChessUI {
 		this.hintsLayer.appendChild(hint);
 	}
 
-	renderPieces(tempBoard) {
+	renderPieces(tempBoard) { // maybe make this async but i dont really know someoe helpe me pleasee
 		this.piecesLayer.innerHTML = '';
 		const matrix = tempBoard || this.board.getBoardMatrix();
 
@@ -302,7 +302,13 @@ class ChessUI {
 	}
 }
 
+
+// console.log
+
+
 document.addEventListener('DOMContentLoaded', () => {
 	const gameBoard = new Board();
 	new ChessUI(gameBoard);
 });
+
+// wa
